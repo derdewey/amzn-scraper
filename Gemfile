@@ -1,3 +1,5 @@
-source "http://rubygems.org/"
+source "http://gemcutter.org/"
+gem "json"
+# gem "SystemTimer"
 gem "mechanize"
 gem "redis"
