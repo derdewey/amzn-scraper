@@ -23,15 +23,19 @@ a.get(directory) do |page|
   parser = page.parser
   #parser.css('div.asinTextBlock div a').inject(categories){|arr,ent| arr << {:name => ent.content, :url => ent['href']}}
   parser.css('div.asinTextBlock div a').inject(categories){|arr,ent| arr << Mechanize::Page::Link.new(ent,a,page)}
+  
 end
 
 puts categories
 
 category = categories.first
-a.click(category)
 
-categories.each do |category_link|
-  category_page = a.click(category_link)
-  a.click category_page.link_with(:text => /Artists, A-Z/)
-  
+stack = [category]
+
+while l = stack.pop
+  # Let's stay inside of amazon.com
+  # next unless (l.uri.host.length == 0 || l.uri.host == a.history.first.uri.host)
+  next unless (l.host.nil? || l.uri.host.empty?)
+  puts "."
+  stack.push(*(a.click(l).links)) unless a.visited?(l.href)
 end
