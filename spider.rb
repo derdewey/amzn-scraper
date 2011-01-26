@@ -2,9 +2,10 @@
 raise ArgumentError, "Must provide number of worker threads" if ARGV.empty?
 
 require 'rubygems'
-require 'logger'
 require 'bundler'
 Bundler.require
+
+require 'logger'
 require 'mechanize'
 require 'redis'
 require 'digest/sha1'

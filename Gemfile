@@ -1,5 +1,5 @@
 source "http://gemcutter.org/"
-gem "json"
+# gem "json"
 # gem "SystemTimer"
 gem "mechanize"
 gem "redis"

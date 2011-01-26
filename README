@@ -1,0 +1,32 @@
+The Amazing Amazon Scraping Spider
+
+My newest adventure in parsing stuff. Nokogiri to crawl across amazon! Spiders are fun to write, but Amazon is a pain to harvest. Amazon is not keen on id's for the elements of the page, so there's nothing to shout out on the page that, Hey, this is a review! I have to brute force my way across the page and look for 'review-like' content. These smarts are encapsulate in my Amazon::Review module. Take a look in there to see what structure I'm looking for. Take away: very brittle search. Hopefully they don't change structure very often.
+
+Features
+ * Recreate social graph of amazon.com reviews
+ * Trivially scalable
+ * Smart extractor (may or may not need wiggle room, in progress)
+ * Multithreaded with clean shutdown operation
+ * Outputs to any database Sequel supports (not yet!)
+ 
+Tools used
+  Mechanize
+  Nokogiri
+  Sequel
+  Redis
+
+Trivially Scalable?
+
+  Yes! The spider uses a stack for search but the trick is now we're using a Redis list. Visited URLs are hashed and placed in a used set. If you get the size of this set you have a good idea of how many pages have been visited. As long as the spider can visit Redis it can contribute to the search process! No security in place, but you can put redis behind a firewall and use ssh reverse proxying si necessaire.
+  
+Ad hoc testing:
+
+To load up either test.html or reformatted.html in nokogiri:
+irb > require 'bundler'
+irb > Bundler.require
+irb > doc = Nokogiri::HTML.parse(File.read("test.html"))
+irb > doc.css("blah blah blah")
+  
+Bugs
+ * Because most URLs are root-relative, a new crawler fetching entry from stack will not know what host to connect to.
+ ** Probably have the first URL parsed by ruby's uri lib. If the uri has no host, just set it amazon.com.
