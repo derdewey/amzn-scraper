@@ -1,12 +1,12 @@
 module Review
   module Amazon
-    EXTRACTION_LOOKUP =
+    REVIEW_EXTRACTION_LOOKUP =
       {
        :star_rating           => [[:css, "a + br + div > div + div > span > span > span"],[:text]],
        :name                  => [[:css, "a + br + div > div + div + div > div > div + div > a > span"],[:text]],
        :verified_purchase     => [[:css, "a + br + div > div + div + div > span > b"],[:text]],
-       :cross_referenced_from => [[:css, "a + br + div > div + div + div + div + div > b"]],
-       :review_body           => [[:css, "a + br + div > div + div + div + div + div"]]
+       :cross_referenced_from => [[:css, "a + br + div > div + div + div + div + div > b > span"],[:first],[:next_sibling],[:text],[:gsub!,/\s{2,}/,' '],[:strip!]],
+       :review_body           => [[:css, "a + br + div > div + div + div + div + div"],[:first],[:next_sibling],[:text],[:gsub!,/\s{2,}/,' '],[:strip!]]
       }.freeze
     def a_review_page?
       # "5.0 out of 5 stars"
@@ -25,8 +25,8 @@ module Review
       # Not inside of a div but surrounded by them. Must find previous sibling.
        doc.css("a + br + div > div + div + div + div + div").collect{|x| x.next_sibling}.select{|x| x.text.length != 0}.each{|x| puts "'" + x.text.strip.gsub(/\s{2,}/,' ') + "'"}; nil
     end
-    def extraction_lookup
-      return EXTRACTION_LOOKUP
+    def review_extractors
+      return REVIEW_EXTRACTION_LOOKUP
     end
     def extract(command_stack)
       @mech.log.info "Extract called with command stack #{command_stack}"
@@ -38,7 +38,7 @@ module Review
         @mech.log.debug "Extract step #{step} transformed retval to a '#{retval.class}' (hint: '#{retval.to_s[0..25]}')"
         step = step + 1
       end
-      @mech.log.debug "Extract returning #{retval}"
+      @mech.log.debug "Extract returning '#{retval}'"
       return retval
     end
     def extract_review

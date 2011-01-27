@@ -16,7 +16,7 @@ class SingleReviewExtraction < Test::Unit::TestCase
     @agent = Mechanize.new do |a|
       a.log = LOGGER
     end
-    @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read("single_review.html"),nil,@agent)
+    @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read("full_review_page.html"),nil,@agent)
   end
   def test_star_rating
     @agent.log.level = Logger::ERROR
