@@ -18,29 +18,9 @@ class SingleReviewExtraction < Test::Unit::TestCase
     end
     @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read("full_review_page.html"),nil,@agent)
   end
-  def test_star_rating
+  def test_title
     @agent.log.level = Logger::ERROR
-    command_stack = @page.review_extractors[:star_rating]
-    assert_equal("5.0 out of 5 stars",@page.extract(command_stack))
-  end
-  def test_name
-    LOGGER.level = Logger::ERROR
-    command_stack = @page.review_extractors[:name]
-    assert_equal("Billy Bob",@page.extract(command_stack))
-  end
-  def test_verified_purchase
-    LOGGER.level = Logger::ERROR
-    command_stack = @page.review_extractors[:verified_purchase]
-    assert_equal("Amazon Verified Purchase",@page.extract(command_stack))
-  end
-  def test_cross_referenced_from
-    LOGGER.level = Logger::ERROR
-    command_stack = @page.review_extractors[:cross_referenced_from]
-    assert_equal("Switched (Trylle Trilogy, Book 1) (Kindle Edition)",@page.extract(command_stack))
-  end
-  def test_review_body
-    LOGGER.level = Logger::ERROR
-    command_stack = @page.review_extractors[:review_body]
-    assert_equal("BLARP BLARP MULTILINE FANCINESS",@page.extract(command_stack))
+    command_stack = @page.product_extractors[:title]
+    assert_equal("Switched (Trylle Trilogy, Book 1)",@page.extract(command_stack))
   end
 end

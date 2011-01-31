@@ -11,6 +11,9 @@ module Spider
       @logger.debug "Adding spider" if @logger
       @spiders << spider
     end
+    def [](index)
+      return @spiders[index]
+    end
     def stop
       @logger.debug "Stopping spiders" if @logger
       puts "Please wait while #{@spiders.length} spiders are shut down"

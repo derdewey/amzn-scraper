@@ -1,6 +1,6 @@
 module Review
   module Amazon
-    REVIEW_EXTRACTION_LOOKUP =
+    REVIEW_EXTRACTION =
       {
        :star_rating           => [[:css, "a + br + div > div + div > span > span > span"],[:text]],
        :name                  => [[:css, "a + br + div > div + div + div > div > div + div > a > span"],[:text]],
@@ -8,25 +8,19 @@ module Review
        :cross_referenced_from => [[:css, "a + br + div > div + div + div + div + div > b > span"],[:first],[:next_sibling],[:text],[:gsub!,/\s{2,}/,' '],[:strip!]],
        :review_body           => [[:css, "a + br + div > div + div + div + div + div"],[:first],[:next_sibling],[:text],[:gsub!,/\s{2,}/,' '],[:strip!]]
       }.freeze
+    PRODUCT_EXTRACTION =
+    {
+      :title                  => [[:css, "body > table > tr > td > h1 + div > h1 + div > h1 > a"],[:text],[:gsub!,/\s{2,}/,' '],[:strip!]],
+      :author                 => [[:css, ""]]
+    }.freeze
     def a_review_page?
-      # "5.0 out of 5 stars"
-      rev.css("a + br + div > div + div > span > span > span")
-      
-      # "Firstname Lastname"
-      rev.css("a + br + div > div + div + div > div > div + div > a > span").first.text.strip
-      
-      # OPTIONAL "Amazon Verified Purchase"
-      rev.css("a + br + div > div + div + div > span > b")
-      
-      # OPTIONAL "This review is from..."
-      rev.css("a + br + div > div + div + div + div + div > b")
-      
-      # Review body
-      # Not inside of a div but surrounded by them. Must find previous sibling.
-       doc.css("a + br + div > div + div + div + div + div").collect{|x| x.next_sibling}.select{|x| x.text.length != 0}.each{|x| puts "'" + x.text.strip.gsub(/\s{2,}/,' ') + "'"}; nil
+      raise
     end
     def review_extractors
-      return REVIEW_EXTRACTION_LOOKUP
+      return REVIEW_EXTRACTION
+    end
+    def product_extractors
+      return PRODUCT_EXTRACTION
     end
     def extract(command_stack)
       @mech.log.info "Extract called with command stack #{command_stack}"
@@ -40,9 +34,6 @@ module Review
       end
       @mech.log.debug "Extract returning '#{retval}'"
       return retval
-    end
-    def extract_review
-      raise "HI!"
     end
   end
 end
