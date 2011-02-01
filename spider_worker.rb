@@ -54,7 +54,7 @@ module Spider
       puts "Notifying review parsers... NOT"
     end
     def seed
-      LOG.debug "Seeding link list"
+      LOG.info "Seeding link list"
       directory = %Q{http://www.amazon.com/Subjects-Books/b/ref=sv_b_1?ie=UTF8&node=1000}
       self.get(directory) do |page|
         page.links.each do |link|
@@ -68,7 +68,11 @@ module Spider
     end
     def start
       @state = :working
-      work
+      @t = Thread.new do
+        while(self.working? && link = pop_link) do
+          work(link)
+        end
+      end
     end
     def stop
       @state = :stopped
@@ -76,50 +80,40 @@ module Spider
     def working?
       @state == :working
     end
-    def work
-      LOG.info "Starting up a worker thread"
-      @t = Thread.new do
-        while self.working? && link = pop_link
-          LOG.info "Working on #{link.inspect}"
-          begin
-            page = self.get(link)
-          rescue Mechanize::ResponseCodeError => e
-            if(e.response_code == NOT_FOUND)
-              new_link = "http://www.amazon.com/" + link.to_s
-              LOG.error "Looks like a NOT_FOUND error! Pushing #{new_link}"
-              # Worth a try later...
-              self.push_link(new_link)
-            end
-              LOG.error "#{e.class}:#{e}, #{e.response_code.class}:#{e.response_code} raised for #{link}"
-            next
-          rescue RuntimeError => e
-            if(e.to_s.eql?(NEED_ABSOLUTE_URL))
-              page = self.get(AMAZON_BASE_URL + link)
-            else
-              LOG.error "#{e.class}:#{e} for #{link}. Not handling!"
-              next
-            end
-          rescue => e
-            LOG.error "Unhandled exception #{e.class}:#{e}"
-            return
-          end
-          
-          @tasks.each do |task|
-            begin
-              task.call(self,page)
-            rescue => e
-              LOG.error "self: #{self.class}:#{self}, page: #{page.class},#{page} #{e.backtrace}"
-            end
-          end
-        end
-      end
-    end
-    def list_is_empty?
-      return false unless @redis.exists(UGP)
-      @redis.llen(UGP).eql?(0)
-    end
     def join
       @t.join
+    end
+    def work(link)
+      begin
+        page = self.get(link)
+      rescue Mechanize::ResponseCodeError => e
+        if(e.response_code == NOT_FOUND)
+          new_link = "http://www.amazon.com/" + link.to_s
+          LOG.error "Looks like a NOT_FOUND error! Pushing #{new_link}"
+          # Worth a try later...
+          self.push_link(new_link)
+        end
+          LOG.error "#{e.class}:#{e}, #{e.response_code.class}:#{e.response_code} raised for #{link}"
+        next
+      rescue RuntimeError => e
+        if(e.to_s.eql?(NEED_ABSOLUTE_URL))
+          page = self.get(AMAZON_BASE_URL + link)
+        else
+          LOG.error "#{e.class}:#{e} for #{link}. Not handling!"
+          next
+        end
+      rescue => e
+        LOG.error "Unhandled exception #{e.class}:#{e}"
+        return
+      end
+      
+      @tasks.each do |task|
+        begin
+          task.call(self,page)
+        rescue => e
+          LOG.error "self: #{self.class}:#{self}, page: #{page.class},#{page} #{e.backtrace}"
+        end
+      end
     end
   end
 end

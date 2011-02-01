@@ -1,11 +1,13 @@
+$: << ".."
+
 require 'rubygems'
 require 'bundler'
 Bundler.require
 require 'test/unit'
 
-require '../spider_worker'
-require '../spider_pool'
-require '../amazon_review'
+require 'spider_worker'
+require 'spider_pool'
+require 'amazon_review'
 require 'logger'
 
 LOGGER = Logger.new(STDOUT)
@@ -16,7 +18,7 @@ class SingleReviewExtraction < Test::Unit::TestCase
     @agent = Mechanize.new do |a|
       a.log = LOGGER
     end
-    @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read("single_review.html"),nil,@agent)
+    @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read(File.dirname(__FILE__) + "/single_review.html"),nil,@agent)
   end
   def test_star_rating
     @agent.log.level = Logger::ERROR

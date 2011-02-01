@@ -3,3 +3,4 @@ source "http://gemcutter.org/"
 # gem "SystemTimer"
 gem "mechanize"
 gem "redis"
+gem "SystemTimer" # get rid of noise from redis' warning

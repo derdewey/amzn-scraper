@@ -22,9 +22,7 @@ LOG = Logger.new(STDOUT)
 LOG.level = Logger::ERROR
 
 LOG.info "Creating spider pool"
-POOL = Spider::Pool.new do |pool|
-  pool.logger = LOG
-end
+POOL = Spider::Pool.new(:logger => LOG)
 
 LOG.info "Crawling the webs with #{ARGV[0]} worker(s)"
 ARGV[0].to_i.times do |num|
@@ -41,6 +39,14 @@ end
 POOL[0].seed
 
 Signal.trap("INT") do 
+  LOG.fatal "Please wait while #{POOL.spiders.length} spiders are shut down"
   POOL.stop
+  @alive = true
 end
 POOL.start
+
+Thread.new do
+  while(@alive ||= true) do
+    sleep(1)
+  end
+end.join

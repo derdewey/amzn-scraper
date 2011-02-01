@@ -1,9 +1,11 @@
 module Spider
   class Pool
     attr_writer :logger
-    def initialize
+    attr_accessor :spiders
+    def initialize(opts)
+      opts = {}.merge(opts)
       @spiders = []
-      @logger = nil
+      @logger = opts[:logger]
     
       yield self if block_given?
     end
@@ -14,16 +16,13 @@ module Spider
     def [](index)
       return @spiders[index]
     end
-    def stop
-      @logger.debug "Stopping spiders" if @logger
-      puts "Please wait while #{@spiders.length} spiders are shut down"
-      @spiders.each{|s| s.stop; print "."}
-    end
     def start
-      @logger.info "Starting all spiders" if @logger
+      @logger.info "Starting #{@spiders.length} spider(s)" if @logger
       @spiders.each{|s| s.start}
+    end
+    def stop
+      @spiders.each{|s| s.stop}
       @spiders.each{|s| s.join}
-      @logger.info "All spiders have stopped" if @logger
     end
   end
 end
