@@ -3,8 +3,7 @@ module Review
     REVIEW_MOST_COMMON_NODE   =  [{:params => [:css, "a + br + div > div + div > span > span > span".freeze]},
                                   {:params => [:collect], :block => lambda{|x| x.parent.parent.parent.parent}.freeze}]
     REVIEW_EXTRACTION =
-      {
-       :star_rating           => [{:params => [:css, "div + div > span > span > span".freeze]},
+      {:star_rating           => [{:params => [:css, "div + div > span > span > span".freeze]},
                                   {:params => [:first]},
                                   {:params => [:text]},
                                   {:params => [:gsub, /\s{2,}/,' ']},
@@ -24,26 +23,25 @@ module Review
                                   {:params => [:gsub,/\s{2,}/,' ']},
                                   {:params => [:strip]}],
        :review_body           => [{:params => [:css, "div + div + div + div + div"]},
-                                  {:params => [:inject,nil], :block => lambda{|str,entry| str = Review::Amazon.integrate(str,entry); str}.freeze},
+                                  {:params => [:inject,nil], :block => lambda{|str,entry| str = Spider::Helpers.integrate(str,entry); str}.freeze},
                                   {:params => [:gsub,/\s{2,}/,' ']},
                                   {:params => [:strip]}]
       }.freeze
     PRODUCT_EXTRACTION =
-    {
-      :title                  => [{:params => [:css, "body > table > tr > td > h1 + div > h1 + div > h1 > a"]},
-                                  {:params => [:text]},
-                                  {:params => [:gsub,/\s{2,}/,' ']},
-                                  {:params => [:strip]}],
-      :author                 => [{:params => [:css, "div.cBoxInner > div.crProductInfo > table > tr > td + td > div.description > a"]},
-                                  {:params => [:first]},
-                                  {:params => [:next_sibling]},
-                                  {:params => [:text]},
-                                  {:params => [:strip!]},
-                                  {:params => [:gsub,/by /,'']}],
-      :price                  => [{:params => [:css, "div.cBoxInner > div.crProductInfo > table > tr > td + td > div.buyBlock > div.pricing > span.price"]},
-                                  {:params => [:first]},
-                                  {:params => [:text]}]
-    }.freeze
+      {:title                  => [{:params => [:css, "body > table > tr > td > h1 + div > h1 + div > h1 > a"]},
+                                   {:params => [:text]},
+                                   {:params => [:gsub,/\s{2,}/,' ']},
+                                   {:params => [:strip]}],
+       :author                 => [{:params => [:css, "div.cBoxInner > div.crProductInfo > table > tr > td + td > div.description > a"]},
+                                   {:params => [:first]},
+                                   {:params => [:next_sibling]},
+                                   {:params => [:text]},
+                                   {:params => [:strip!]},
+                                   {:params => [:gsub,/by /,'']}],
+       :price                  => [{:params => [:css, "div.cBoxInner > div.crProductInfo > table > tr > td + td > div.buyBlock > div.pricing > span.price"]},
+                                    {:params => [:first]},
+                                    {:params => [:text]}]
+      }.freeze
     def review_extractors
       return REVIEW_EXTRACTION
     end
@@ -70,30 +68,34 @@ module Review
       # @mech.log.debug "Extract returning '#{retval[0..250]}'"
       return retval
     end
-    def root_review_nodes
-      self.execute_command_stack(REVIEW_MOST_COMMON_NODE)
+    def review_nodes
+      self.execute_command_stack(REVIEW_MOST_COMMON_NODE) rescue []
+    end
+    def review_page?
+      !review_nodes.empty?
     end
     def extract_all_reviews
-      root_review_nodes.inject([]) do |arr,review|
+      review_nodes.inject([]) do |arr,review|
         begin
           val = REVIEW_EXTRACTION.inject({}) do |hash,entry|
             name, command_stack = entry
-            begin
-              hash[name] = self.execute_command_stack(REVIEW_EXTRACTION[name],review)
-            rescue => e
-              @mech.log.error "Failure on #{name.inspect}. Current hash: #{hash.inspect}"
-              raise e
-            end
+            hash[name] = self.execute_command_stack(REVIEW_EXTRACTION[name],review)
             hash
           end
         rescue => e
-          @mech.log.error "Could not extract, got '#{e}'. Going to next possible review entity."
+          @mech.log.debug "Could not extract, got '#{e}'. Going to next possible review entity."
           next arr
         end
         arr << val
         arr
       end
     end
+  end
+end
+
+module Spider
+  module Helpers
+    # Slap non-element siblings together. Aka, all text gets clobbered together.
     def self.integrate(str,head)
       if(str.nil?)
         str = ""

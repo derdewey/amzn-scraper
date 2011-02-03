@@ -37,8 +37,13 @@ class AllReviewExtraction < Test::Unit::TestCase
   end
   def test_multiple_review_extractions
     @agent.log.level = Logger::INFO
-    raise @page.extract_all_reviews.inspect
-    # tree_search_params = @page.review_extractors[:verified_purchase][0]
-    # raise @page.parser.send(*tree_search_params).length.inspect
+    reviews = @page.extract_all_reviews
+    assert_not_equal(reviews,[])
+    assert_kind_of(Array,reviews)
+    assert_kind_of(Hash,reviews.first)
+  end
+  def test_review_page_test
+    @agent.log.level = Logger::INFO
+    assert_equal(@page.review_page?,true)
   end
 end
