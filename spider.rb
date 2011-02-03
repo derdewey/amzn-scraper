@@ -19,7 +19,7 @@ require 'amazon_review'
 require 'tasks/extract_hrefs'
 
 LOG = Logger.new(STDOUT)
-LOG.level = Logger::ERROR
+LOG.level = Logger::DEBUG
 
 LOG.info "Creating spider pool"
 POOL = Spider::Pool.new(:logger => LOG)

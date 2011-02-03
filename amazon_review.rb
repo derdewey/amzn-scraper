@@ -1,31 +1,30 @@
 module Review
   module Amazon
+    REVIEW_MOST_COMMON_NODE   =  [{:params => [:css, "a + br + div > div + div > span > span > span".freeze]},
+                                  {:params => [:collect], :block => lambda{|x| x.parent.parent.parent.parent}.freeze}]
     REVIEW_EXTRACTION =
       {
-       :most_common_node      => [{:params => [:css, "a + br + div > div + div > span > span > span"]},
-                                  {:params => [:collect], :block => lambda{|x| x.parent.parent.parent.parent}}],
-       :star_rating           => [{:params => [:css, "a + br + div > div + div > span > span > span"]},
+       :star_rating           => [{:params => [:css, "div + div > span > span > span".freeze]},
                                   {:params => [:first]},
-                                  {:params => [:text]}],
-       :name                  => [{:params => [:css, "a + br + div > div + div + div > div > div + div > a > span"]},
-                                  {:params => [:text]}],
-       :verified_purchase     => [{:params => [:css, "a + br + div > div + div + div > span > b"]},
-                                  {:params => [:text]}],
-       :cross_referenced_from => [{:params => [:css, "a + br + div > div + div + div + div + div > b > span"]},
+                                  {:params => [:text]},
+                                  {:params => [:gsub, /\s{2,}/,' ']},
+                                  {:params => [:split, ' ']},
+                                  {:params => [:at, 0]},
+                                  {:params => [:to_f]}],
+       :name                  => [{:params => [:css, "div + div + div > div > div + div > a > span".freeze]},
+                                  {:params => [:text]},
+                                  {:params => [:gsub,/\s{2,}/,' ']}],
+       :verified_purchase     => [{:params => [:css, "div + div + div > span > b".freeze]},
+                                  {:params => [:text]},
+                                  {:params => [:eql?,"Amazon Verified Purchase".freeze]}],
+       :cross_referenced_from => [{:params => [:css, "div + div + div + div + div > b > span".freeze]},
                                   {:params => [:first]},
                                   {:params => [:next_sibling]},
                                   {:params => [:text]},
                                   {:params => [:gsub,/\s{2,}/,' ']},
                                   {:params => [:strip]}],
        :review_body           => [{:params => [:css, "div + div + div + div + div"]},
-                                  {:params => [:inject,nil], :block => lambda{|str,entry| str = Review::Amazon.integrate(str,entry); str}},
-                                  {:params => [:gsub,/\s{2,}/,' ']},
-                                  {:params => [:strip]}
-                                  ],
-       :old_review_body           => [{:params => [:css, "a + br + div > div + div + div + div + div"]},
-                                  {:params => [:first]},
-                                  {:params => [:next_sibling]},
-                                  {:params => [:text]},
+                                  {:params => [:inject,nil], :block => lambda{|str,entry| str = Review::Amazon.integrate(str,entry); str}.freeze},
                                   {:params => [:gsub,/\s{2,}/,' ']},
                                   {:params => [:strip]}]
       }.freeze
@@ -51,7 +50,7 @@ module Review
     def product_extractors
       return PRODUCT_EXTRACTION
     end
-    def extract(command_stack, nokogiri_doc = nil)
+    def execute_command_stack(command_stack, nokogiri_doc = nil)
       # @mech.log.debug %Q{Extract called with command stack #{command_stack}}
       if(nokogiri_doc == nil)
         retval = parser
@@ -60,7 +59,7 @@ module Review
       end
       
       command_stack.each_with_index do |command,index|
-        @mech.log.debug "Extract step #{index} #{command.inspect} being sent to a '#{retval.class}' (hint: '#{retval.to_s[0..25]}')"
+        @mech.log.debug "Excuting step #{index} #{command.inspect} being sent to a '#{retval.class}' (hint: '#{retval.to_s[0..75]}')"
         if(command[:block])
           retval = retval.send(*command[:params], &command[:block])
         else
@@ -71,25 +70,27 @@ module Review
       # @mech.log.debug "Extract returning '#{retval[0..250]}'"
       return retval
     end
+    def root_review_nodes
+      self.execute_command_stack(REVIEW_MOST_COMMON_NODE)
+    end
     def extract_all_reviews
-      reviews = self.extract(REVIEW_EXTRACTION[:most_common_node])
-      # @mech.log.error "Going through the nodeset #{reviews.class}"
-      # reviews[3].write_to(STDOUT, :indent=> 2)
-      # @mech.log.error "WAH"
-      # raise self.extract(REVIEW_EXTRACTION[:review_body],reviews[3]).inspect
-      # exit(1)
-      retval = []
-      reviews.inject(retval) do |arr,review|
+      root_review_nodes.inject([]) do |arr,review|
         begin
-          val = self.extract(REVIEW_EXTRACTION[:review_body],review)
+          val = REVIEW_EXTRACTION.inject({}) do |hash,entry|
+            name, command_stack = entry
+            begin
+              hash[name] = self.execute_command_stack(REVIEW_EXTRACTION[name],review)
+            rescue => e
+              @mech.log.error "Failure on #{name.inspect}. Current hash: #{hash.inspect}"
+              raise e
+            end
+            hash
+          end
         rescue => e
-          @mech.log.error "Could not extract because of #{e}. Going to next possible review entity."
-          next
+          @mech.log.error "Could not extract, got '#{e}'. Going to next possible review entity."
+          next arr
         end
-        # next if val == "nil"
-        raise val.inspect
-        # review.write_to(STDOUT, :indent => 2)
-        # self.extract(REVIEW_EXTRACTION[:star_rating],review)
+        arr << val
         arr
       end
     end

@@ -23,21 +23,21 @@ class AllReviewExtraction < Test::Unit::TestCase
   def test_title
     @agent.log.level = Logger::INFO
     command_stack = @page.product_extractors[:title]
-    assert_equal("Switched (Trylle Trilogy, Book 1)",@page.extract(command_stack))
+    assert_equal("Switched (Trylle Trilogy, Book 1)",@page.execute_command_stack(command_stack))
   end
   def test_author_name
     @agent.log.level = Logger::INFO
     command_stack = @page.product_extractors[:author]
-    assert_equal("Amanda Hocking",@page.extract(command_stack))
+    assert_equal("Amanda Hocking",@page.execute_command_stack(command_stack))
   end
   def test_price
     @agent.log.level = Logger::INFO
     command_stack = @page.product_extractors[:price]
-    assert_equal("$0.99",@page.extract(command_stack))
+    assert_equal("$0.99",@page.execute_command_stack(command_stack))
   end
   def test_multiple_review_extractions
-    @agent.log.level = Logger::DEBUG
-    @page.extract_all_reviews
+    @agent.log.level = Logger::INFO
+    raise @page.extract_all_reviews.inspect
     # tree_search_params = @page.review_extractors[:verified_purchase][0]
     # raise @page.parser.send(*tree_search_params).length.inspect
   end
