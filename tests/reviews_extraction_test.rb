@@ -20,24 +20,9 @@ class AllReviewExtraction < Test::Unit::TestCase
     end
     @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read(File.dirname(__FILE__) + "/full_review_page.html"),nil,@agent)
   end
-  def test_title
-    @agent.log.level = Logger::INFO
-    command_stack = @page.product_extractors[:title]
-    assert_equal("Switched (Trylle Trilogy, Book 1)",@page.execute_command_stack(command_stack))
-  end
-  def test_author_name
-    @agent.log.level = Logger::INFO
-    command_stack = @page.product_extractors[:author]
-    assert_equal("Amanda Hocking",@page.execute_command_stack(command_stack))
-  end
-  def test_price
-    @agent.log.level = Logger::INFO
-    command_stack = @page.product_extractors[:price]
-    assert_equal("$0.99",@page.execute_command_stack(command_stack))
-  end
   def test_multiple_review_extractions
     @agent.log.level = Logger::INFO
-    reviews = @page.extract_all_reviews
+    reviews = @page.reviews
     assert_not_equal(reviews,[])
     assert_kind_of(Array,reviews)
     assert_kind_of(Hash,reviews.first)

@@ -33,6 +33,7 @@ ARGV[0].to_i.times do |num|
     agent.init_state_mutex
     agent.init_tasks
     agent << Proc.new{|agent,page| Spider::Task::Links.extract(agent,page)}
+    agent << Proc.new{|agent,page| LOG.info "#"*20 + "PROCESSING!" + "#"*20; LOG.info page.reviews.inspect if page.review_page?}
   end
 end
 
@@ -48,5 +49,6 @@ POOL.start
 Thread.new do
   while(@alive ||= true) do
     sleep(1)
+    # LOG.info "Pool alive: #{POOL.alive?}"
   end
 end.join

@@ -1,9 +1,9 @@
+require 'rake/testtask'
+
 task :default => [:test]
 
-desc "Test the mechanize system"
-task :test do
-  Dir.glob("tests/**.rb").each do |filename|
-    puts "requiring #{filename}"
-    require filename
-  end
+Rake::TestTask.new(:test) do |t|
+  t.test_files = FileList['tests/*_test.rb']
+  # t.ruby_opts = ['-rubygems'] if defined? Gem
+  # t.ruby_opts << '-I.'
 end

@@ -24,5 +24,8 @@ module Spider
       @spiders.each{|s| s.stop}
       @spiders.each{|s| s.join}
     end
+    def alive?
+      @spiders.each{|s| s.running?}
+    end
   end
 end
