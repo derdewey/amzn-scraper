@@ -2,7 +2,6 @@ module Spider
   module Worker
     NOT_FOUND = "404".freeze
     NEED_ABSOLUTE_URL = "need absolute URL".freeze
-    AMAZON_BASE_URL = "http://www.amazon.com".freeze
     def init_state_mutex
       @state_muteux = Mutex.new
     end
@@ -18,10 +17,20 @@ module Spider
     def redis
       @redis
     end
+    def redis_config=(incoming)
+      @redis_config = incoming
+    end
+    def redis_config
+      @redis_config
+    end
     def href_digest(link)
       LOG.debug link
       Digest::SHA1.hexdigest(link)
     end
+    def empty?
+      @redis.llen(@redis_config[:pages][:unvisited]) == 0
+    end
+    
     # Must provide a string
     def push_link(uri)
       if uri.respond_to?(:request_uri)
@@ -37,25 +46,25 @@ module Spider
       
       LOG.debug "push_link link.href #{link.class} #{link}"
       digest = self.href_digest(link)
-      if(@redis.sismember(VGP_H,digest))
+      if(@redis.sismember(@redis_config[:pages][:visited],digest))
         false
       else
-        @redis.lpush(UGP,link)
+        @redis.lpush(@redis_config[:pages][:unvisited],link)
       end
     end
     def pop_link
-      link = @redis.lpop(UGP)
+      link = @redis.lpop(@redis_config[:pages][:unvisited])
       LOG.debug "pop_link link: #{link}"
       digest = self.href_digest(link)
-      @redis.sadd(VGP_H,digest)
+      @redis.sadd(@redis_config[:pages][:visited],digest)
       return link
     end
     def notify_review_parsers
       puts "Notifying review parsers... NOT"
     end
-    def seed
+    def seed(url)
       LOG.info "Seeding link list"
-      directory = %Q{http://www.amazon.com/Subjects-Books/b/ref=sv_b_1?ie=UTF8&node=1000}
+      directory = url
       self.get(directory) do |page|
         page.links.each do |link|
           # LOG.info "Seed stage: #{link.inspect}"
@@ -88,7 +97,7 @@ module Spider
         page = self.get(link)
       rescue Mechanize::ResponseCodeError => e
         if(e.response_code == NOT_FOUND)
-          new_link = "http://www.amazon.com/" + link.to_s
+          new_link = config[:base] + link.to_s
           LOG.error "Looks like a NOT_FOUND error! Pushing #{new_link}"
           # Worth a try later...
           self.push_link(new_link)
@@ -97,7 +106,7 @@ module Spider
         next
       rescue RuntimeError => e
         if(e.to_s.eql?(NEED_ABSOLUTE_URL))
-          page = self.get(AMAZON_BASE_URL + link)
+          page = self.get(config[:base] + link)
         else
           LOG.error "#{e.class}:#{e} for #{link}. Not handling!"
           next

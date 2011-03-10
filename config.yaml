@@ -1,0 +1,16 @@
+:workers: 1
+:redis:
+    :host: tureus.com
+    :port: 40858
+    :password: lets_get_some_nlp
+    :thread_safe: true
+:amazon:
+    :seed: http://www.amazon.com/Subjects-Books/b/ref=sv_b_1?ie=UTF8&node=1000
+    :base: http://www.amazon.com/
+    :redis:
+        :products:
+            :unvisited: products:unvisted:asin
+            :visited: products:visited:asin
+        :pages:
+            :unvisited: pages:unvisited:hrefs
+            :visited: pages:visited:hrefs
