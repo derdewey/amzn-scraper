@@ -1,30 +1,24 @@
 module Spider
   module Task
     module ASIN
-      ID = %r{(gp/product/|detail/-/)([A-Z0-9]{10})}
+      # ID = %r{(gp/product/|detail/-/)([A-Z0-9^\n]{10})}
+      ID = %r{(dp/|gp/product/|detail/-/|ASIN=)([A-Z0-9]{10})}
       def self.extract(agent,page)
+        retval = []
         page.links.each do |link|
           next if (link.uri.nil?)
           begin
             if(match = ID.match(link.uri.to_s))
               asin = match[2]
-              LOG.debug "Spider::Task::ASIN extracted #{asin}"
-              agent.redis.sadd "unvisted:asin", asin
+              retval << asin.to_s
             end
           rescue 
-            LOG.error "Problem with #{link.inspect} with uri #{link.uri}"
+            LOG.fatal "Problem with #{link.inspect} with uri #{link.uri}"
             Rubinius::Debugger.start
           end
-          # begin
-          #   if (match = ID.match(uri.href))
-          #     LOG.error match.inspect
-          #     # agent.redis.lpush(uri)
-          #   end
-          # rescue => e
-          #   LOG.error "Hit error on #{l.inspect}"
-          #   LOG.error e.backtrace.join("\n")
-          # end
         end
+        retval.uniq!
+        return retval
       end
     end
   end

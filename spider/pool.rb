@@ -8,9 +8,23 @@ module Spider
       @logger = opts[:logger]
     
       yield self if block_given?
+      
+      Signal.trap("INT") do
+        puts
+        LOG.info "Please wait while #{@spiders.length} spiders are shut down"
+        stop
+      end
+      @alive=true
+      @shutdown_thread = Thread.new do
+        while(@alive ||= true) do
+          sleep(1)
+        end
+      end
+    end
+    def join
+      @shutdown_thread.join
     end
     def <<(spider)
-      @logger.debug "Adding spider" if @logger
       @spiders << spider
     end
     def [](index)
@@ -18,7 +32,7 @@ module Spider
     end
     def start
       @logger.info "Starting #{@spiders.length} spider(s)" if @logger
-      @spiders.each{|s| s.start}
+      @spiders.each{|s| s.spawn}
     end
     def stop
       @spiders.each{|s| s.stop}
