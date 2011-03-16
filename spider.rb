@@ -22,8 +22,9 @@ require 'amazon/tasks/extract_asin'
 
 require 'rubinius/debugger'
 
-LOG = Logger.new(STDOUT)
-LOG.level = Logger::DEBUG
+# LOG = Logger.new(STDOUT)
+LOG = Logger.new(File.open('run.log','a+'))
+LOG.level = Logger::INFO
 
 LOG.info "Creating spider pool"
 POOL = Spider::Pool.new(:logger => LOG)
@@ -47,12 +48,12 @@ config[:workers].to_i.times do |num|
         # We are using a blocking pop. It could return nil if there's nothing in the list. Totally cool.
         nil
       elsif(agnt.redis.sismember(agnt.redis_config[:asin][:visited],redisval))
-        agnt.redis.sadd(cfg[:asin][:visited],redisval)
         nil
       else
-        asin = redisval[1]
+        asin = redisval[1] # Hvae to lookup [1], asin:unvisited in [0]
         LOG.info "#{agnt.object_id} getting ASIN #{asin}"
-        agnt.get("http://amazon.com/gp/product/"+asin+"/product-reviews")
+        agnt.redis.sadd(agnt.redis_config[:asin][:visited],redisval[1])
+        agnt.get("http://amazon.com/gp/product-reviews/"+asin+"/product-reviews")
       end
       page
     end

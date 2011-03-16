@@ -87,7 +87,6 @@ module Amazon
       
       end
       def reviews
-        review_nodes.length.inspect
         extract_all(review_nodes,REVIEW_EXTRACTION)
       end
       def review_nodes
@@ -98,16 +97,17 @@ module Amazon
       end
       def extract_all(nodes,conversion_rules)
         nodes.inject([]) do |arr,review|
-          begin
-            val = conversion_rules.inject({}) do |hash,entry|
+          val = conversion_rules.inject({}) do |hash,entry|
+            begin
               name, command_stack = entry
               hash[name] = self.execute_command_stack(command_stack,review)
               hash
+            rescue => e
+              LOG.debug "#{ e.message } - (#{ e.class })" unless LOG.nil?
+              (e.backtrace or []).each{|x| LOG.debug "\t\t" + x}  unless LOG.nil?
+              hash[name] = nil
+              hash
             end
-          rescue => e
-            @mech.log.error "#{ e.message } - (#{ e.class })" unless @mech.log.nil?
-            (e.backtrace or []).each{|x| @mech.log.error "\t\t" + x}  unless @mech.log.nil?
-            next arr
           end
           arr << val
           arr

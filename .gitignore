@@ -3,3 +3,5 @@ gems/
 gems19/
 .bundle/
 config.yaml
+run.log
+Gemfile.lock
