@@ -1,3 +1,3 @@
 source "http://gemcutter.org/"
-gem "mechanize"
+gem "mechanize", :path => "/Users/xavierlange/code/mechanize"
 gem "redis"

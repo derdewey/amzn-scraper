@@ -23,7 +23,7 @@ require 'amazon/tasks/extract_asin'
 require 'rubinius/debugger'
 
 LOG = Logger.new(STDOUT)
-LOG.level = Logger::INFO
+LOG.level = Logger::DEBUG
 
 LOG.info "Creating spider pool"
 POOL = Spider::Pool.new(:logger => LOG)
@@ -52,7 +52,7 @@ config[:workers].to_i.times do |num|
       else
         asin = redisval[1]
         LOG.info "#{agnt.object_id} getting ASIN #{asin}"
-        agnt.get("http://amazon.com/gp/product/"+asin)
+        agnt.get("http://amazon.com/gp/product/"+asin+"/product-reviews")
       end
       page
     end
@@ -72,11 +72,10 @@ config[:workers].to_i.times do |num|
     # agent << Proc.new{|agent,page| Spider::Task::Links.extract(agent,page)}
     # agent << Proc.new{|agent,page| LOG.info "#"*20 + "PROCESSING!" + "#"*20; LOG.info page.reviews.inspect if page.review_page?}
     agent << Proc.new do |agnt, pg|
-      LOG.debug "worker##{agnt.object_id} got a page for URL extraction!"
       list = Spider::Task::Links.extract(agnt,pg)
     end
+    
     agent << Proc.new do |agnt, pg|
-      LOG.debug "worker##{agnt.object_id} got a page for ASIN extraction!"
       list = Spider::Task::ASIN.extract(agnt,pg)
       # list.each{|asin| LOG.info "ASIN: #{asin}"}
       list.each do |x|
@@ -86,9 +85,11 @@ config[:workers].to_i.times do |num|
       end
     end
     agent << Proc.new do |agnt,pg|
-      LOG.debug "worker##{agnt.object_id} going to try siphoning out the reviews"
-      LOG.info "Title: " + pg.title
-      LOG.info pg.reviews.inspect
+      LOG.info "Title: " + pg.title # + " URL: " + pg.link
+      reviews = pg.reviews
+      if(!reviews.nil?)
+        LOG.info reviews.inspect
+      end
     end
   end
 end

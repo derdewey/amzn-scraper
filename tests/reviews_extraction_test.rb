@@ -5,20 +5,20 @@ require 'bundler'
 Bundler.require
 require 'test/unit'
 
-require 'spider_worker'
-require 'spider_pool'
-require 'amazon_review'
+require 'spider/pool'
+require 'spider/worker'
+require 'amazon/extractors/review'
 require 'logger'
 
 LOGGER = Logger.new(STDOUT)
-# LOGGER.level = Logger::DEBUG
+LOGGER.level = Logger::DEBUG
 
 class AllReviewExtraction < Test::Unit::TestCase
   def setup
     @agent = Mechanize.new do |a|
       a.log = LOGGER
     end
-    @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read(File.dirname(__FILE__) + "/full_review_page.html"),nil,@agent)
+    @page = Mechanize::Page.new(nil,{'content-type' => 'text/html'},File.read(File.dirname(__FILE__) + "/html/full_review_page.html"),nil,@agent)
   end
   def test_multiple_review_extractions
     @agent.log.level = Logger::INFO

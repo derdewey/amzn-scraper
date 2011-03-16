@@ -5,17 +5,17 @@ module Spider
       ID = %r{(dp/|gp/product/|detail/-/|ASIN=)([A-Z0-9]{10})}
       def self.extract(agent,page)
         retval = []
-        page.links.each do |link|
-          next if (link.uri.nil?)
-          begin
+        begin
+          page.links.each do |link|
+            next if (link.uri.nil?)
             if(match = ID.match(link.uri.to_s))
               asin = match[2]
               retval << asin.to_s
             end
-          rescue 
-            LOG.fatal "Problem with #{link.inspect} with uri #{link.uri}"
-            Rubinius::Debugger.start
           end
+        rescue => e
+          LOG.error "#{ e.message } - (#{ e.class })" unless LOG.nil?
+          (e.backtrace or []).each{|x| LOG.error "\t\t" + x}
         end
         retval.uniq!
         return retval

@@ -39,9 +39,18 @@ module Amazon
                                      {:params => [:text]},
                                      {:params => [:strip!]},
                                      {:params => [:gsub,/by /,'']}],
-         :price                  => [{:params => [:css, "div.cBoxInner > div.crProductInfo > table > tr > td + td > div.buyBlock > div.pricing > span.price"]},
-                                      {:params => [:first]},
-                                      {:params => [:text]}]
+         :price                  => [{:params => [:css, "div.cBoxInner > div.crProductInfo > table > tr > td + td > div.buyBlock > div.pricing"]},
+                                     {:params => nil, :block => lambda do |node|
+                                                                  span = node.css("span")
+                                                                  if(span.first.nil?)
+                                                                    node.text
+                                                                  else
+                                                                    span.text
+                                                                  end
+                                                                end},
+                                     {:params => [:gsub,/\s{2,}/,' ']},
+                                     {:params => [:strip]}
+                                    ]
         }.freeze
       def review_extractors
         return REVIEW_EXTRACTION
@@ -50,7 +59,7 @@ module Amazon
         return PRODUCT_EXTRACTION
       end
       def execute_command_stack(command_stack, nokogiri_doc = nil)
-        @mech.log.debug %Q{Extract called with command stack #{command_stack}}
+        # puts %Q{Extract called with command stack #{command_stack}}
         if(nokogiri_doc == nil)
           retval = parser
         else
@@ -58,13 +67,16 @@ module Amazon
         end
       
         command_stack.each_with_index do |command,index|
-          @mech.log.debug "Excuting step #{index} #{command.inspect} being sent to a '#{retval.class}' (hint: '#{retval.to_s[0..75]}')"
-          if(command[:block])
+          # puts "Excuting step #{index} #{command.inspect} being sent to a '#{retval.class}' (hint: '#{retval.to_s[0..75]}')"
+          if(command[:params] && command[:block])
             retval = retval.send(*command[:params], &command[:block])
-          else
+          elsif(command[:params].nil? && command[:block])
+            retval = command[:block].call(retval)
+          elsif(command[:params] && command[:block].nil?)
             retval = retval.send(*command[:params])
+          else
+            raise RuntimeError, "command stack entry makes no sense #{command}"
           end
-          @mech.log.debug "Extract step #{index} transformed retval to a '#{retval.class}' (hint: '#{retval.to_s[0..25]}')"
         end
         return retval
       end
@@ -93,7 +105,8 @@ module Amazon
               hash
             end
           rescue => e
-            @mech.log.debug "Could not extract, got '#{e}'. Going to next possible review entity."
+            @mech.log.error "#{ e.message } - (#{ e.class })" unless @mech.log.nil?
+            (e.backtrace or []).each{|x| @mech.log.error "\t\t" + x}  unless @mech.log.nil?
             next arr
           end
           arr << val
@@ -116,6 +129,9 @@ module Amazon
           str += entry.text
         end
         return str
+      end
+      def self.normalize(str)
+        str.send(:gsub,/\s{2,}/,' ')
       end
     end
   end

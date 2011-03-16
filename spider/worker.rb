@@ -55,10 +55,8 @@ module Spider
         begin
           task.call(self,data)
         rescue => e
-          LOG.error "self: #{self.class}:#{self}, data: #{data.class},#{data}"
-          e.backtrace.each do |line|
-            LOG.error line
-          end
+          LOG.error "#{ e.message } - (#{ e.class })" unless LOG.nil?
+          (e.backtrace or []).each{|x| LOG.error "\t\t" + x}
         end
       end
     end
