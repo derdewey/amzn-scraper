@@ -22,6 +22,21 @@ module Spider
           end
         end
         retval.uniq!
+        retval = retval.collect do |x|
+          if(x.host =~ /amazon/)
+            x.to_s
+          elsif(x.host.nil?)
+            "http://www.amazon.com" + x.to_s
+          else
+            nil
+          end
+        end
+        retval = retval.select do |x|
+          !x.nil?
+        end
+        retval.uniq!
+        
+        return retval
       end
     end
   end

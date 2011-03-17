@@ -22,19 +22,93 @@ require 'amazon/tasks/extract_asin'
 
 require 'rubinius/debugger'
 
-# LOG = Logger.new(STDOUT)
-LOG = Logger.new(File.open('run.log','a+'))
+LOG = Logger.new(STDOUT)
+# LOG = Logger.new(File.open('run.log','a+'))
 LOG.level = Logger::INFO
 
-LOG.info "Creating spider pool"
-POOL = Spider::Pool.new(:logger => LOG)
-
-LOG.info "Loading config.yaml"
 config = YAML.load(File.read("config.yaml"))
 
-LOG.info "Crawling the webs with #{config[:workers]} worker(s)"
+worker_pool = Spider::Pool.new(:logger => LOG)
+
 config[:workers].to_i.times do |num|
-  POOL << Mechanize.new do |agent|
+  worker_pool << Mechanize.new do |agent|
+    agent.user_agent_alias = 'Mac Safari'
+    agent.redis = Redis.new(config[:redis])
+    agent.redis_config = config[:amazon][:redis]
+    # agent.log = LOG
+    agent.init_state_mutex
+    agent.init_tasks
+    # Return nil of no values was returned. Will be invoked again by worker, don't worry.
+    # To get more pages, http://www.amazon.com/gp/product-reviews/0865716692/?pageNumber=5
+    # and then check to see if you 
+    
+    # main_page = if(agnt.redis.sismember(agnt.redis_config[:asin][:visited],asin))
+    #   nil
+    # else
+    #   LOG.info "#{agnt.object_id} getting ASIN #{asin}"
+    #   agnt.redis.sadd(agnt.redis_config[:asin][:visited],redisval[1])
+    #   begin
+    #     agnt.get("http://amazon.com/gp/product-reviews/"+asin+"/product-reviews")
+    #   rescue => e
+    #     LOG.error "#{ e.message } - (#{ e.class })" unless LOG.nil?
+    #     (e.backtrace or []).each{|x| LOG.error "\t\t" + x}
+    #     nil
+    #   end
+    # end
+    
+    agent.next = Proc.new do |agnt,rds,cfg|
+      redisval = rds.blpop(cfg[:asin][:unvisited], 1)
+      unless redisval.nil?
+        asin = redisval[1]
+        rds.sadd(agnt.redis_config[:asin][:visited],asin)
+        
+        pages = []
+        url_base = "http://www.amazon.com/gp/product-reviews/" + asin + "/?pageNumber="
+        begin
+          working_url = url_base + (pages.length+1).to_s
+          LOG.fatal "Current working URL: " + working_url
+          page = agnt.get(working_url)
+          if(page.title =~ /Kindle/)
+            LOG.fatal "Blacklisted title: #{page.title}"
+            break            
+          end
+          pages << page
+          if(pages.length > 4000)
+            LOG.fatal "Base url #{base_url} is leading a worker past 4000 review pages. Breaking out of loop."
+            break
+          end
+        end while !pages.last.nil? && pages.last.reviews.length > 2
+        pages
+      else
+        []
+      end
+    end
+    
+    # ASIN extraction
+    agent << Proc.new do |agnt, pgs|
+      list = pgs.collect{|pg| Spider::Task::ASIN.extract(agnt,pg)}.flatten
+      list.each do |x|
+        unless agnt.redis.sismember(agnt.redis_config[:asin][:visited],x)
+          agnt.redis.lpush(agnt.redis_config[:asin][:unvisited],x)
+        end
+      end
+    end
+    agent << Proc.new do |agnt,pgs|
+      reviews = pgs.inject([]) do |arr,pg|
+        if(arr.size == 0)
+          LOG.fatal pg.product_info
+        end
+        arr << pg.reviews
+      end.flatten
+      if(!reviews.nil?)
+        LOG.info reviews.inspect unless reviews.empty?
+      end
+    end
+  end
+end
+
+config[:workers].to_i.times do |num|
+  worker_pool << Mechanize.new do |agent|
     agent.user_agent_alias = 'Mac Safari'
     agent.redis = Redis.new(config[:redis])
     agent.redis_config = config[:amazon][:redis]
@@ -43,57 +117,58 @@ config[:workers].to_i.times do |num|
     agent.init_tasks
     # Return nil of no values was returned. Will be invoked again by worker, don't worry.
     agent.next = Proc.new do |agnt,rds,cfg|
-      redisval = rds.blpop(cfg[:asin][:unvisited], 1)
+      unvisited_count = agnt.redis.llen(agnt.redis_config[:href][:unvisited]) || 0
+      while(unvisited_count > agnt.redis_config[:href][:high_water_mark])
+        sleep(5)
+      end
+      redisval = rds.blpop(cfg[:href][:unvisited], 1)
+      # We are using a blocking pop. It could return nil if there's nothing in the list. Totally cool.
       page = if(redisval.nil?)
-        # We are using a blocking pop. It could return nil if there's nothing in the list. Totally cool.
         nil
-      elsif(agnt.redis.sismember(agnt.redis_config[:asin][:visited],redisval))
+      elsif(agnt.redis.sismember(agnt.redis_config[:href][:visited],redisval))
         nil
       else
-        asin = redisval[1] # Hvae to lookup [1], asin:unvisited in [0]
-        LOG.info "#{agnt.object_id} getting ASIN #{asin}"
-        agnt.redis.sadd(agnt.redis_config[:asin][:visited],redisval[1])
-        agnt.get("http://amazon.com/gp/product-reviews/"+asin+"/product-reviews")
+        href = redisval[1] # Hvae to lookup [1], asin:unvisited in [0]
+        LOG.fatal "#{agnt.object_id} getting HREF #{href}"
+        agnt.redis.sadd(agnt.redis_config[:href][:visited],redisval[1])
+        begin
+          agnt.get(href)
+        rescue => e
+          LOG.error "#{ e.message } - (#{ e.class })" unless LOG.nil?
+          (e.backtrace or []).each{|x| LOG.error "\t\t" + x}
+          nil
+        end
       end
       page
     end
-    # Worker has no idea what queues or patterns you want. Do that here.
-    agent.push = Proc.new do |uri|
-      if uri.respond_to?(:request_uri)
-        link = uri.request_uri
-      elsif uri.respond_to?(:href)
-        link = uri.href
-      elsif uri.kind_of?(URI::Generic)
-        link = uri.to_s
-      else
-        LOG.error "got an unusable entity #{uri.class}:#{uri} to_s:#{uri.to_s}"
-        return
-      end
-    end
-    # agent << Proc.new{|agent,page| Spider::Task::Links.extract(agent,page)}
-    # agent << Proc.new{|agent,page| LOG.info "#"*20 + "PROCESSING!" + "#"*20; LOG.info page.reviews.inspect if page.review_page?}
-    agent << Proc.new do |agnt, pg|
-      list = Spider::Task::Links.extract(agnt,pg)
-    end
     
+    # ASIN extraction
     agent << Proc.new do |agnt, pg|
       list = Spider::Task::ASIN.extract(agnt,pg)
-      # list.each{|asin| LOG.info "ASIN: #{asin}"}
       list.each do |x|
         unless agnt.redis.sismember(agnt.redis_config[:asin][:visited],x)
           agnt.redis.lpush(agnt.redis_config[:asin][:unvisited],x)
         end
       end
-    end
-    agent << Proc.new do |agnt,pg|
-      LOG.info "Title: " + pg.title # + " URL: " + pg.link
-      reviews = pg.reviews
-      if(!reviews.nil?)
-        LOG.info reviews.inspect
+    end    
+    # Link extraction
+    agent << Proc.new do |agnt, pg|
+      list = Spider::Task::Links.extract(agnt,pg)
+      LOG.debug list.inspect
+      list.each do |link|
+        unless agnt.redis.sismember(agnt.redis_config[:href][:visited],link)
+          agnt.redis.lpush(agnt.redis_config[:href][:unvisited],link)
+        end
       end
     end
   end
 end
 
-POOL.start
-POOL.join
+worker_pool.start
+
+Signal.trap("INT") do
+  LOG.info "Please wait while #{worker_pool.size} workers are shut down"
+  worker_pool.stop
+end
+
+worker_pool.join

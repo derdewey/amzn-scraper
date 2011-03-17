@@ -80,11 +80,8 @@ module Amazon
         end
         return retval
       end
-      def product_page?
-        raise
-      end
       def product_info
-      
+        extract_all([self],PRODUCT_EXTRACTION)
       end
       def reviews
         extract_all(review_nodes,REVIEW_EXTRACTION)

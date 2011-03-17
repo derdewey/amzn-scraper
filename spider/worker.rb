@@ -49,6 +49,7 @@ module Spider
           work(data) unless data.nil?
         end
       end
+      @t.abort_on_exception = true
     end
     def work(data)
       @tasks.each do |task|

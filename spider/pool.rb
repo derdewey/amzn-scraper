@@ -6,14 +6,7 @@ module Spider
       opts = {}.merge(opts)
       @spiders = []
       @logger = opts[:logger]
-    
       yield self if block_given?
-      
-      Signal.trap("INT") do
-        puts
-        LOG.info "Please wait while #{@spiders.length} spiders are shut down"
-        stop
-      end
       @alive=true
       @shutdown_thread = Thread.new do
         while(@alive ||= true) do
@@ -40,6 +33,9 @@ module Spider
     end
     def alive?
       @spiders.each{|s| s.running?}
+    end
+    def size
+      @spiders.length
     end
   end
 end
