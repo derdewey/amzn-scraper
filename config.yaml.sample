@@ -1,0 +1,17 @@
+:workers: 1
+:redis:
+    :host: your.host.com
+    :port: 1234
+    :password: probably_want_one
+    :thread_safe: true
+    :blpoptimeout: 5.0
+:amazon:
+    :seed: http://www.amazon.com/Subjects-Books/b/ref=sv_b_1?ie=UTF8&node=1000
+    :base: http://www.amazon.com/
+    :redis:
+        :asin:
+            :unvisited: products:unvisited:asin
+            :visited: products:visited:asin
+        :pages:
+            :unvisited: pages:unvisited:hrefs
+            :visited: pages:visited:hrefs
