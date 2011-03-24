@@ -93,7 +93,7 @@ module Amazon
         !review_nodes.empty?
       end
       def extract_all(nodes,conversion_rules)
-        nodes.inject([]) do |arr,review|
+        reviews = nodes.inject([]) do |arr,review|
           val = conversion_rules.inject({}) do |hash,entry|
             begin
               name, command_stack = entry
@@ -109,6 +109,8 @@ module Amazon
           arr << val
           arr
         end
+        reviews.delete_if{|x| x[:name].nil? || x[:name].empty? }
+        reviews
       end
     end
   end
