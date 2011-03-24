@@ -12,6 +12,7 @@ module Spider
       @tasks << task
     end
     def redis=(incoming)
+      raise ArgumentError, "Must have a valid redis connection!" if incoming.nil?
       @redis = incoming
     end
     def redis
