@@ -33,7 +33,12 @@ worker_pool = Spider::Pool.new(:logger => LOG)
 config[:workers].to_i.times do |num|
   worker_pool << Mechanize.new do |agent|
     agent.user_agent_alias = 'Mac Safari'
-    agent.redis = Redis.new(config[:redis])
+    begin
+	agent.redis = Redis.new(config[:redis])
+    rescue => e
+	LOG.fatal "Could not initialize redis connection. Is server up? Is your config correct?"
+	exit(1)
+    end
     agent.redis_config = config[:amazon][:redis]
     # agent.log = LOG
     agent.init_state_mutex
@@ -58,7 +63,7 @@ config[:workers].to_i.times do |num|
     
     agent.next = Proc.new do |agnt,rds,cfg|
       redisval = rds.blpop(cfg[:asin][:unvisited], 1)
-      unless redisval.nil?
+      unless (redisval.nil? || rds.sismember(cfg[:asin][:visited], redisval))
         asin = redisval[1]
         rds.sadd(agnt.redis_config[:asin][:visited],asin)
         
@@ -77,6 +82,9 @@ config[:workers].to_i.times do |num|
             LOG.fatal "Base url #{base_url} is leading a worker past 4000 review pages. Breaking out of loop."
             break
           end
+        rescue => e
+          pages << nil
+          break
         end while !pages.last.nil? && pages.last.reviews.length > 2
         pages
       else
