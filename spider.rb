@@ -69,14 +69,15 @@ config[:workers].to_i.times do |num|
           pages << nil
           break
         end while !pages.last.nil? && pages.last.reviews.length > 2
-        pages
+        {:asin => asin, :pages => pages}
       else
-        []
+        {:asin => nil, :pages => []}
       end
     end
     
     # ASIN extraction
-    agent << Proc.new do |agnt, pgs|
+    agent << Proc.new do |agnt, data|
+      pgs = data[:pages]
       list = pgs.collect{|pg| Spider::Task::ASIN.extract(agnt,pg)}.flatten
       list.each do |x|
         unless agnt.redis.sismember(agnt.redis_config[:asin][:visited],x)
@@ -84,15 +85,22 @@ config[:workers].to_i.times do |num|
         end
       end
     end
-    agent << Proc.new do |agnt,pgs|
-      reviews = pgs.inject([]) do |arr,pg|
-        if(arr.size == 0)
-          LOG.fatal pg.product_info
+    # Review extraction
+    agent << Proc.new do |agnt, data|
+      asin = data[:asin]
+      pgs = data[:pages]
+      unless (asin.nil? || pgs.nil? || pgs.empty?)
+        reviews = pgs.inject([]) do |arr,pg|
+          if(arr.size == 0)
+            LOG.fatal pg.product_info
+          end
+          arr << pg.reviews
+        end.flatten
+        if(!reviews.nil? && !reviews.empty?)
+          outgoing = {asin => reviews}.to_json
+          LOG.info outgoing.inspect
+          agnt.redis.lpush(agnt.redis_config[:reviews][:intransit],outgoing)
         end
-        arr << pg.reviews
-      end.flatten
-      if(!reviews.nil?)
-        LOG.info reviews.inspect unless reviews.empty?
       end
     end
   end
