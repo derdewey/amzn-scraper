@@ -45,9 +45,9 @@ config[:workers].to_i.times do |num|
     agent.init_tasks
     
     agent.next = Proc.new do |agnt,rds,cfg|
-      redisval = rds.blpop(cfg[:asin][:unvisited], 1)
-      unless (redisval.nil? || rds.sismember(cfg[:asin][:visited], redisval))
-        asin = redisval[1]
+      redisval = rds.spop(cfg[:asin][:unvisited])
+      unless (redisval.nil?)
+        asin = redisval
         rds.sadd(agnt.redis_config[:asin][:visited],asin)
         
         pages = []
@@ -56,6 +56,7 @@ config[:workers].to_i.times do |num|
           working_url = url_base + (pages.length+1).to_s
           LOG.fatal "Current working URL: " + working_url
           page = agnt.get(working_url)
+          rds.sadd(agnt.redis_config[:href][:visited],url_base)
           if(page.title =~ /Kindle/)
             LOG.debug "Blacklisted title: #{page.title}"
             break            
@@ -71,6 +72,7 @@ config[:workers].to_i.times do |num|
         end while !pages.last.nil? && pages.last.reviews.length > 2
         {:asin => asin, :pages => pages}
       else
+        sleep(5)
         {:asin => nil, :pages => []}
       end
     end
@@ -81,7 +83,7 @@ config[:workers].to_i.times do |num|
       list = pgs.collect{|pg| Spider::Task::ASIN.extract(agnt,pg)}.flatten
       list.each do |x|
         unless agnt.redis.sismember(agnt.redis_config[:asin][:visited],x)
-          agnt.redis.lpush(agnt.redis_config[:asin][:unvisited],x)
+          agnt.redis.sadd(agnt.redis_config[:asin][:unvisited],x)
         end
       end
     end
@@ -116,24 +118,31 @@ config[:workers].to_i.times do |num|
     agent.init_tasks
     # Return nil of no values was returned. Will be invoked again by worker, don't worry.
     agent.next = Proc.new do |agnt,rds,cfg|
-      unvisited_count = agnt.redis.llen(agnt.redis_config[:href][:unvisited]) || 0
+      begin
+        unvisited_count = agnt.redis.scard(agnt.redis_config[:href][:unvisited]) || 0
+      rescue => e
+        LOG.fatal agnt.redis_config[:href][:unvisited].to_s
+        raise e
+      end
       while(unvisited_count > agnt.redis_config[:href][:high_water_mark])
         sleep(5)
       end
-      redisval = rds.blpop(cfg[:href][:unvisited], 1)
+      redisval = rds.spop(cfg[:href][:unvisited])
       # We are using a blocking pop. It could return nil if there's nothing in the list. Totally cool.
       page = if(redisval.nil?)
+        sleep(5)
         nil
       elsif(agnt.redis.sismember(agnt.redis_config[:href][:visited],redisval))
         nil
       else
-        href = redisval[1] # Hvae to lookup [1], asin:unvisited in [0]
+        href = redisval
         LOG.fatal "#{agnt.object_id} getting HREF #{href}"
-        agnt.redis.sadd(agnt.redis_config[:href][:visited],redisval[1])
+        agnt.redis.sadd(agnt.redis_config[:href][:visited],redisval)
         begin
           agnt.get(href)
         rescue => e
           LOG.error "#{ e.message } - (#{ e.class })" unless LOG.nil?
+          LOG.error "redisval: #{redisval.inspect}"
           (e.backtrace or []).each{|x| LOG.error "\t\t" + x}
           nil
         end
@@ -146,7 +155,7 @@ config[:workers].to_i.times do |num|
       list = Spider::Task::ASIN.extract(agnt,pg)
       list.each do |x|
         unless agnt.redis.sismember(agnt.redis_config[:asin][:visited],x)
-          agnt.redis.lpush(agnt.redis_config[:asin][:unvisited],x)
+          agnt.redis.sadd(agnt.redis_config[:asin][:unvisited],x)
         end
       end
     end    
@@ -156,7 +165,7 @@ config[:workers].to_i.times do |num|
       LOG.debug list.inspect
       list.each do |link|
         unless agnt.redis.sismember(agnt.redis_config[:href][:visited],link)
-          agnt.redis.lpush(agnt.redis_config[:href][:unvisited],link)
+          agnt.redis.sadd(agnt.redis_config[:href][:unvisited],link)
         end
       end
     end
