@@ -3,8 +3,11 @@ module Amazon
     module Review
       REVIEW_MOST_COMMON_NODE   =  [{:params => [:css, "a + br + div > div + div > span > span > span".freeze]},
                                     {:params => [:collect], :block => lambda{|x| x.parent.parent.parent.parent}.freeze}]
+                                    # I would like to strip out those useless mini-reviews at the top of the page
+                                    # {:params => [:delete_if], :block => lambda{|x| x.to_s =~ /Read the full review/}}
       REVIEW_EXTRACTION =
-        {:star_rating           => [{:params => [:css, "div + div > span > span > span".freeze]},
+        {
+         :star_rating           => [{:params => [:css, "div + div > span > span > span".freeze]},
                                     {:params => [:first]},
                                     {:params => [:text]},
                                     {:params => [:gsub, /\s{2,}/,' ']},
@@ -26,7 +29,12 @@ module Amazon
          :review_body           => [{:params => [:css, "div + div + div + div + div"]},
                                     {:params => [:inject,nil], :block => lambda{|str,entry| str = Spider::Helpers.integrate(str,entry); str}.freeze},
                                     {:params => [:gsub,/\s{2,}/,' ']},
-                                    {:params => [:strip]}]
+                                    {:params => [:strip]}],
+         :user_id               => [{:params => [:css, "div + div + div > div > div + div > a".freeze]},
+                                    {:params => [:first]},
+                                    {:params => [:[],'href']},
+                                    {:params => [:match,/(profile\/)([A-Z0-9]+)/.freeze]},
+                                    {:params => [:[],2]}]
         }.freeze
       PRODUCT_EXTRACTION =
         {:title                  => [{:params => [:css, "body > table > tr > td > h1 + div > h1 + div > h1 > a"]},
@@ -67,7 +75,7 @@ module Amazon
         end
       
         command_stack.each_with_index do |command,index|
-          # puts "Excuting step #{index} #{command.inspect} being sent to a '#{retval.class}' (hint: '#{retval.to_s[0..75]}')"
+          LOG.debug "Executing step #{index} #{command.inspect} being sent to a '#{retval.class}' (hint: '#{retval.to_s[0..250]}')"
           if(command[:params] && command[:block])
             retval = retval.send(*command[:params], &command[:block])
           elsif(command[:params].nil? && command[:block])
@@ -100,8 +108,12 @@ module Amazon
               hash[name] = self.execute_command_stack(command_stack,review)
               hash
             rescue => e
+              LOG.debug "="*20
+              LOG.debug "Failure extracting '#{name}'"
               LOG.debug "#{ e.message } - (#{ e.class })" unless LOG.nil?
               (e.backtrace or []).each{|x| LOG.debug "\t\t" + x}  unless LOG.nil?
+              LOG.debug review.to_s
+              LOG.debug "="*20
               hash[name] = nil
               hash
             end
