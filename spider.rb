@@ -36,30 +36,13 @@ config[:workers].to_i.times do |num|
     begin
 	agent.redis = Redis.new(config[:redis])
     rescue => e
-	LOG.fatal "Could not initialize redis connection. Is server up? Is your config correct?"
-	exit(1)
+    	LOG.fatal "Could not initialize redis connection. Is server up? Is your config correct?"
+    	exit(1)
     end
     agent.redis_config = config[:amazon][:redis]
-    # agent.log = LOG
+    agent.log = LOG
     agent.init_state_mutex
     agent.init_tasks
-    # Return nil of no values was returned. Will be invoked again by worker, don't worry.
-    # To get more pages, http://www.amazon.com/gp/product-reviews/0865716692/?pageNumber=5
-    # and then check to see if you 
-    
-    # main_page = if(agnt.redis.sismember(agnt.redis_config[:asin][:visited],asin))
-    #   nil
-    # else
-    #   LOG.info "#{agnt.object_id} getting ASIN #{asin}"
-    #   agnt.redis.sadd(agnt.redis_config[:asin][:visited],redisval[1])
-    #   begin
-    #     agnt.get("http://amazon.com/gp/product-reviews/"+asin+"/product-reviews")
-    #   rescue => e
-    #     LOG.error "#{ e.message } - (#{ e.class })" unless LOG.nil?
-    #     (e.backtrace or []).each{|x| LOG.error "\t\t" + x}
-    #     nil
-    #   end
-    # end
     
     agent.next = Proc.new do |agnt,rds,cfg|
       redisval = rds.blpop(cfg[:asin][:unvisited], 1)
@@ -74,7 +57,7 @@ config[:workers].to_i.times do |num|
           LOG.fatal "Current working URL: " + working_url
           page = agnt.get(working_url)
           if(page.title =~ /Kindle/)
-            LOG.fatal "Blacklisted title: #{page.title}"
+            LOG.debug "Blacklisted title: #{page.title}"
             break            
           end
           pages << page
