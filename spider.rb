@@ -40,7 +40,7 @@ elsif(logger_config[:level] == 'error')
 elsif(logger_config[:level] == 'warn')
   Logger::WARN
 elsif(logger_config[:level] == 'info')
-  Logger:INFO
+  Logger::INFO
 elsif(logger_config[:level] == 'debug')
   Logger::DEBUG
 else
