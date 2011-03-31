@@ -1,17 +1,20 @@
-:workers: 1
+:workers: 15
+:logger:
+    :output: stdout
+    :level: info
 :redis:
-    :host: your.host.com
+    :host: your_host.tdl
     :port: 1234
-    :password: probably_want_one
+    :password: configured_from_redis_conf
     :thread_safe: true
-    :blpoptimeout: 5.0
 :amazon:
-    :seed: http://www.amazon.com/Subjects-Books/b/ref=sv_b_1?ie=UTF8&node=1000
-    :base: http://www.amazon.com/
     :redis:
         :asin:
-            :unvisited: products:unvisited:asin
-            :visited: products:visited:asin
-        :pages:
-            :unvisited: pages:unvisited:hrefs
-            :visited: pages:visited:hrefs
+            :unvisited: asin:unvisited
+            :visited: asin:visited
+        :href:
+            :unvisited: href:unvisited
+            :visited: href:visited
+            :high_water_mark: 5000
+        :reviews:
+            :intransit: reviews:intransit
