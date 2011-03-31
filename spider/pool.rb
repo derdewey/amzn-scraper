@@ -7,15 +7,12 @@ module Spider
       @spiders = []
       @logger = opts[:logger]
       yield self if block_given?
-      @alive=true
-      @shutdown_thread = Thread.new do
-        while(@alive ||= true) do
-          sleep(1)
-        end
-      end
+    end
+    def working?
+      @spiders.detect{|x| x.working?}
     end
     def join
-      @shutdown_thread.join
+      @spiders.each{|s| s.join}
     end
     def <<(spider)
       @spiders << spider
@@ -24,15 +21,12 @@ module Spider
       return @spiders[index]
     end
     def start
-      @logger.info "Starting #{@spiders.length} spider(s)" if @logger
+      @logger.info "Starting #{@spiders.length} spider(s)"
       @spiders.each{|s| s.spawn}
+      self
     end
     def stop
       @spiders.each{|s| s.stop}
-      @spiders.each{|s| s.join}
-    end
-    def alive?
-      @spiders.each{|s| s.running?}
     end
     def size
       @spiders.length

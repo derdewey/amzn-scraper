@@ -35,6 +35,7 @@ module Spider
     end
     def stop
       @state = :stopped
+      LOG.fatal "WORKER WAS STOPPED"
     end
     def working?
       @state == :working
@@ -44,11 +45,12 @@ module Spider
     end
     def spawn
       @state = :working
-      @t = Thread.new do
-        while(self.working?) do
+      @t = Thread.new(self) do |worker|
+        while(worker.working?) do
           data = @next.call(self,@redis,@redis_config)
           work(data) unless data.nil?
         end
+        LOG.fatal "Worker thread died cleanly"
       end
       @t.abort_on_exception = true
     end
