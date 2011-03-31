@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby -Xprofiler.full_report
+#!/usr/bin/env ruby
 raise ArgumentError, "Must provide config file!" if ARGV.empty?
 
 require 'rubygems'
@@ -20,7 +20,7 @@ require 'amazon/tasks/extract_links'
 require 'amazon/tasks/extract_reviews'
 require 'amazon/tasks/extract_asin'
 
-require 'rubinius/debugger'
+# require 'rubinius/debugger'
 
 config = YAML.load(File.read("config.yaml"))
 logger_config = config[:logger]
