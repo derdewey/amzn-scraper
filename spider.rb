@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 raise ArgumentError, "Must provide config file!" if ARGV.empty?
+$: << File.dirname(__FILE__)
 
 require 'rubygems'
 require 'yaml'
