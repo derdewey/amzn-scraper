@@ -5,3 +5,4 @@ gems19/
 config.yaml
 run.log
 Gemfile.lock
+dump.txt*
