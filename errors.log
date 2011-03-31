@@ -1,0 +1,69 @@
+# This is a curated list of errors I have seen while going hog-wild with crawling.
+
+### Error 1!
+[crawler@apollo amzn-scraper]$ ./spider.rb config.yaml
+/usr/lib/ruby/1.9/uri/common.rb:130: [BUG] Segmentation fault
+ruby 1.9.2p0 (2010-08-18) [i386-linux]
+
+-- control frame ----------
+c:0022 p:---- s:0100 b:0100 l:000099 d:000099 CFUNC  :===
+c:0021 p:0050 s:0096 b:0095 l:000094 d:000094 METHOD /usr/lib/ruby/1.9/uri/common.rb:130
+c:0020 p:0013 s:0079 b:0079 l:000078 d:000078 METHOD /usr/lib/ruby/1.9/uri/common.rb:174
+c:0019 p:0019 s:0066 b:0066 l:000065 d:000065 METHOD /usr/lib/ruby/1.9/uri/common.rb:628
+c:0018 p:0042 s:0062 b:0062 l:000061 d:000061 METHOD /home/crawler/amzn-scraper/gems/ruby/1.9/bundler/gems/mechanize-328d4a58ab5e/lib/mechanize/page/link.rb:39
+c:0017 p:0046 s:0059 b:0058 l:000047 d:000057 BLOCK  /home/crawler/amzn-scraper/amazon/tasks/extract_asin.rb:11
+c:0016 p:---- s:0053 b:0053 l:000052 d:000052 FINISH
+c:0015 p:---- s:0051 b:0051 l:000050 d:000050 CFUNC  :each
+c:0014 p:0026 s:0048 b:0048 l:000047 d:000047 METHOD /home/crawler/amzn-scraper/amazon/tasks/extract_asin.rb:9
+c:0013 p:0025 s:0041 b:0041 l:00124c d:000040 BLOCK  ./spider.rb:81
+c:0012 p:---- s:0038 b:0038 l:000037 d:000037 FINISH
+c:0011 p:---- s:0036 b:0036 l:000035 d:000035 CFUNC  :collect
+c:0010 p:0023 s:0033 b:0033 l:00124c d:000032 BLOCK  ./spider.rb:81
+c:0009 p:---- s:0027 b:0027 l:000026 d:000026 FINISH
+c:0008 p:---- s:0025 b:0025 l:000024 d:000024 CFUNC  :call
+c:0007 p:0017 s:0020 b:0020 l:000010 d:000019 BLOCK  /home/crawler/amzn-scraper/spider/worker.rb:58
+c:0006 p:---- s:0016 b:0016 l:000015 d:000015 FINISH
+c:0005 p:---- s:0014 b:0014 l:000013 d:000013 CFUNC  :each
+c:0004 p:0013 s:0011 b:0011 l:000010 d:000010 METHOD /home/crawler/amzn-scraper/spider/worker.rb:56
+c:0003 p:0052 s:0007 b:0007 l:0011a4 d:000006 BLOCK  /home/crawler/amzn-scraper/spider/worker.rb:50
+c:0002 p:---- s:0004 b:0004 l:000003 d:000003 FINISH
+c:0001 p:---- s:0002 b:0002 l:000001 d:000001 TOP   
+---------------------------
+-- Ruby level backtrace information ----------------------------------------
+/home/crawler/amzn-scraper/spider/worker.rb:50:in `block in spawn'
+/home/crawler/amzn-scraper/spider/worker.rb:56:in `work'
+/home/crawler/amzn-scraper/spider/worker.rb:56:in `each'
+/home/crawler/amzn-scraper/spider/worker.rb:58:in `block in work'
+/home/crawler/amzn-scraper/spider/worker.rb:58:in `call'
+./spider.rb:81:in `block (3 levels) in <main>'
+./spider.rb:81:in `collect'
+./spider.rb:81:in `block (4 levels) in <main>'
+/home/crawler/amzn-scraper/amazon/tasks/extract_asin.rb:9:in `extract'
+/home/crawler/amzn-scraper/amazon/tasks/extract_asin.rb:9:in `each'
+/home/crawler/amzn-scraper/amazon/tasks/extract_asin.rb:11:in `block in extract'
+/home/crawler/amzn-scraper/gems/ruby/1.9/bundler/gems/mechanize-328d4a58ab5e/lib/mechanize/page/link.rb:39:in `uri'
+/usr/lib/ruby/1.9/uri/common.rb:628:in `parse'
+/usr/lib/ruby/1.9/uri/common.rb:174:in `parse'
+/usr/lib/ruby/1.9/uri/common.rb:130:in `split'
+/usr/lib/ruby/1.9/uri/common.rb:130:in `==='
+
+-- C level backtrace information -------------------------------------------
+
+[NOTE]
+You may have encountered a bug in the Ruby interpreter or extension libraries.
+Bug reports are welcome.
+For details: http://www.ruby-lang.org/bugreport.html
+
+Aborted
+[crawler@apollo amzn-scraper]$
+
+### Error 2!
+
+/home/crawler/amzn-scraper/gems/ruby/1.9/gems/nokogiri-1.4.4/lib/nokogiri/html/document.rb:84:in `read_memory': failed to allocate memory (NoMemoryError)
+	from /home/crawler/amzn-scraper/gems/ruby/1.9/gems/nokogiri-1.4.4/lib/nokogiri/html/document.rb:84:in `parse'
+	from /home/crawler/amzn-scraper/gems/ruby/1.9/gems/nokogiri-1.4.4/lib/nokogiri/html.rb:22:in `parse'
+	from /home/crawler/amzn-scraper/gems/ruby/1.9/bundler/gems/mechanize-328d4a58ab5e/lib/mechanize/page.rb:91:in `parser'
+	from /home/crawler/amzn-scraper/gems/ruby/1.9/bundler/gems/mechanize-328d4a58ab5e/lib/mechanize/page.rb:54:in `title'
+	from ./spider.rb:58:in `block (3 levels) in <main>'
+	from /home/crawler/amzn-scraper/spider/worker.rb:49:in `call'
+	from /home/crawler/amzn-scraper/spider/worker.rb:49:in `block in spawn'
