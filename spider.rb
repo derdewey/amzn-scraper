@@ -22,11 +22,29 @@ require 'amazon/tasks/extract_asin'
 
 require 'rubinius/debugger'
 
-LOG = Logger.new(STDOUT)
-# LOG = Logger.new(File.open('run.log','a+'))
-LOG.level = Logger::INFO
-
 config = YAML.load(File.read("config.yaml"))
+logger_config = config[:logger]
+LOG = if(logger_config[:output] == 'stdout')
+  Logger.new(STDOUT)
+elsif(logger_config[:output] == 'file')
+  Logger.new(File.open('run.log','a+'))
+else
+  raise ArgumentError, "not sure how to interpret logger's output of #{logger_config[:ouput]}. Expected stdout or file"
+end
+
+LOG.level = if(logger_config[:level] == 'fatal')
+  Logger::FATAL
+elsif(logger_config[:level] == 'error')
+  Logger::ERROR
+elsif(logger_config[:level] == 'warn')
+  Logger::WARN
+elsif(logger_config[:level] == 'info')
+  Logger:INFO
+elsif(logger_config[:level] == 'debug')
+  Logger::DEBUG
+else
+  raise ArgumentError, "not sure how to interpret logger's level of #{logger_config[:level]}. Expected one of error, warn, info, or debug"
+end
 
 worker_pool = Spider::Pool.new(:logger => LOG)
 
