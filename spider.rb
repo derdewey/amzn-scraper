@@ -21,8 +21,6 @@ require 'amazon/tasks/extract_links'
 require 'amazon/tasks/extract_reviews'
 require 'amazon/tasks/extract_asin'
 
-# require 'rubinius/debugger'
-
 config = YAML.load(File.read("config.yaml"))
 logger_config = config[:logger]
 LOG = if(logger_config[:output] == 'stdout')
@@ -45,6 +43,14 @@ elsif(logger_config[:level] == 'debug')
   Logger::DEBUG
 else
   raise ArgumentError, "not sure how to interpret logger's level of #{logger_config[:level]}. Expected one of error, warn, info, or debug"
+end
+
+# require 'rubinius/debugger'
+
+# raise config[:profile]
+if config[:profile]
+  profiler = Rubinius::Profiler::Instrumenter.new
+  profiler.start
 end
 
 worker_pool = Spider::Pool.new(:logger => LOG)
@@ -71,6 +77,8 @@ config[:workers].to_i.times do |num|
         
         pages = []
         url_base = "http://www.amazon.com/gp/product-reviews/" + asin + "/?pageNumber="
+        
+        # ATOMICITY OF A REVIEW WITHIN
         begin
           unless agnt.working?
             LOG.fatal "Worker thread trying to finish operation. Please wait."
@@ -91,6 +99,7 @@ config[:workers].to_i.times do |num|
           pages << nil
           break
         end while !pages.last.nil? && pages.last.reviews.length > 2
+        
         {:asin => asin, :pages => pages}
       else
         sleep(5)
@@ -193,3 +202,9 @@ Signal.trap("INT") do
 end
 
 worker_pool.start.join
+
+
+if(config[:profile])
+  profiler.stop
+  profiler.show
+end
