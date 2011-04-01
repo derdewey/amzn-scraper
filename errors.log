@@ -67,3 +67,68 @@ Aborted
 	from ./spider.rb:58:in `block (3 levels) in <main>'
 	from /home/crawler/amzn-scraper/spider/worker.rb:49:in `call'
 	from /home/crawler/amzn-scraper/spider/worker.rb:49:in `block in spawn'
+
+#### Error 3!
+
+Rubinius Crash Report #rbxcrashreport
+
+Error: signal SIGSEGV
+
+[[Backtrace]]
+0   ruby                                0x0000000100021f20 _ZN8rubiniusL12segv_handlerEi + 160
+1   libSystem.B.dylib                   0x00007fff87f4166a _sigtramp + 26
+2   ???                                 0x000000010700bf90 0x0 + 4412456848
+3   ruby                                0x000000010011b8c4 _ZN8rubinius16BlockEnvironment4callEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsEi + 68
+4   ruby                                0x000000010003926f _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 19007
+5   ruby                                0x000000010011b6b0 _ZN8rubinius16BlockEnvironment19execute_interpreterEPNS_2VMEPNS_9CallFrameEPS0_RNS_9ArgumentsERNS_15BlockInvocationE + 736
+6   ruby                                0x000000010011b8c4 _ZN8rubinius16BlockEnvironment4callEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsEi + 68
+7   ruby                                0x000000010021890b rbx_yield_stack + 235
+8   ???                                 0x0000000102cace11 0x0 + 4341812753
+9   ???                                 0x0000000102caca3e 0x0 + 4341811774
+10  ruby                                0x00000001000379c1 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 12689
+11  ruby                                0x0000000100114fe6 _ZN8rubinius8VMMethod19execute_specializedINS_11NoArgumentsEEEPNS_6ObjectEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 822
+12  ruby                                0x0000000100141591 _ZN8rubinius6Object9send_primEPNS_2VMEPNS_10ExecutableEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 257
+13  ruby                                0x00000001000b5dfb _ZN8rubinius10Primitives11object_sendEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 123
+14  ruby                                0x00000001000219e2 _ZN8rubinius8Dispatch4sendEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsENS_19MethodMissingReasonE + 50
+15  ruby                                0x0000000100217708 rbx_splat_send + 152
+16  ???                                 0x0000000102ca34b8 0x0 + 4341773496
+17  ruby                                0x000000010011b8c4 _ZN8rubinius16BlockEnvironment4callEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsEi + 68
+18  ruby                                0x000000010021890b rbx_yield_stack + 235
+19  ???                                 0x0000000102c92498 0x0 + 4341703832
+20  ruby                                0x000000010011b8c4 _ZN8rubinius16BlockEnvironment4callEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsEi + 68
+21  ruby                                0x000000010021890b rbx_yield_stack + 235
+22  ???                                 0x0000000102c48e00 0x0 + 4341403136
+23  ruby                                0x0000000100037bf7 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 13255
+24  ruby                                0x0000000100114c7f _ZN8rubinius8VMMethod19execute_specializedINS_17SplatOnlyArgumentEEEPNS_6ObjectEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 911
+25  ruby                                0x00000001000379c1 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 12689
+26  ruby                                0x000000010011558e _ZN8rubinius8VMMethod19execute_specializedINS_16GenericArgumentsEEEPNS_6ObjectEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 1358
+27  ruby                                0x0000000100037aa0 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 12912
+28  ruby                                0x0000000100114fe6 _ZN8rubinius8VMMethod19execute_specializedINS_11NoArgumentsEEEPNS_6ObjectEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 822
+29  ruby                                0x00000001000364eb _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 7355
+30  ruby                                0x0000000100114fe6 _ZN8rubinius8VMMethod19execute_specializedINS_11NoArgumentsEEEPNS_6ObjectEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 822
+31  ruby                                0x0000000100037aa0 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 12912
+32  ruby                                0x000000010011b6b0 _ZN8rubinius16BlockEnvironment19execute_interpreterEPNS_2VMEPNS_9CallFrameEPS0_RNS_9ArgumentsERNS_15BlockInvocationE + 736
+33  ruby                                0x000000010011b8c4 _ZN8rubinius16BlockEnvironment4callEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsEi + 68
+34  ruby                                0x000000010016e585 _ZN8rubinius4Proc9call_primEPNS_2VMEPNS_10ExecutableEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 469
+35  ruby                                0x00000001000ac493 _ZN8rubinius10Primitives9proc_callEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 195
+36  ruby                                0x0000000100037aa0 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 12912
+37  ruby                                0x000000010011b6b0 _ZN8rubinius16BlockEnvironment19execute_interpreterEPNS_2VMEPNS_9CallFrameEPS0_RNS_9ArgumentsERNS_15BlockInvocationE + 736
+38  ruby                                0x000000010011b8c4 _ZN8rubinius16BlockEnvironment4callEPNS_2VMEPNS_9CallFrameERNS_9ArgumentsEi + 68
+39  ruby                                0x000000010016e585 _ZN8rubinius4Proc9call_primEPNS_2VMEPNS_10ExecutableEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 469
+40  ruby                                0x00000001000ac493 _ZN8rubinius10Primitives9proc_callEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 195
+41  ruby                                0x0000000100037bf7 _ZN8rubinius8VMMethod11interpreterEPNS_2VMEPS0_PNS_20InterpreterCallFrameE + 13255
+42  ruby                                0x0000000100114fe6 _ZN8rubinius8VMMethod19execute_specializedINS_11NoArgumentsEEEPNS_6ObjectEPNS_2VMEPNS_9CallFrameERNS_8DispatchERNS_9ArgumentsE + 822
+43  ruby                                0x0000000100141680 _ZN8rubinius6Object4sendEPNS_2VMEPNS_9CallFrameEPNS_6SymbolEb + 112
+44  ruby                                0x00000001000475ee _ZN8rubinius12NativeThread7performEv + 174
+45  ruby                                0x0000000100025492 _ZN6thread6Thread10trampolineEPv + 18
+46  libSystem.B.dylib                   0x00007fff87f1a4f6 _pthread_start + 331
+47  libSystem.B.dylib                   0x00007fff87f1a3a9 thread_start + 13
+
+[[System Info]]
+sysname: Darwin
+nodename: one
+release: 10.7.0
+version: Darwin Kernel Version 10.7.0: Sat Jan 29 15:17:16 PST 2011; root:xnu-1504.9.37~1/RELEASE_I386
+machine: i386
+
+### Error 4!
