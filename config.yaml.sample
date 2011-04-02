@@ -1,15 +1,23 @@
-:workers: 15
+:workers: 4
+:profile: false
 :logger:
     :output: stdout
     :level: info
 :redis:
-    :host: your_host.tdl
-    :port: 1234
-    :password: configured_from_redis_conf
+    :host: localhost
+    :port: 2345
+    :password: some_complicated_thing
     :thread_safe: true
+:database:
+    :adapter: postgres
+    :host: localhost
+    :database: crawler
+    :username: crawler
+    :password: some_complicated_password
 :amazon:
     :redis:
         :asin:
+            :unfiltered: asin:unfiltered
             :unvisited: asin:unvisited
             :visited: asin:visited
         :href:
